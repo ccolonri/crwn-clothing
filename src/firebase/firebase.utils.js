@@ -14,6 +14,9 @@ const config = {
     measurementId: "G-2E8NNJC913"
 };
 
+// initialize with config.
+firebase.initializeApp(config);
+
 export const createUserProfileDocument = async (userAuth, additionalData) => {
     if(!userAuth) return;
 
@@ -40,8 +43,34 @@ export const createUserProfileDocument = async (userAuth, additionalData) => {
 }
 
 
-// initialize with config.
-firebase.initializeApp(config);
+export const convertCollectionsSnapshotToMap = (collections) => {
+    const transformedCollection = collections.docs.map(doc => {
+        const {title, items } = doc.data();
+
+        return {
+            routeName: encodeURI(title.toLowerCase()),
+            id: doc.id,
+            title,
+            items
+        }
+    })
+    return transformedCollection.reduce((accumulator, collection) => {
+        accumulator[collection.title.toLowerCase()] = collection;
+        return accumulator;
+    } , {});
+}
+
+// This is used for inserting data into the database regarding new items to sell. 
+// This is a one time use only so use as a function and then remove so we don't add everytime onto the database.
+export const addCollectionAndDocuments = async (collectionKey, objectsToAdd) => {
+    const collectionRef = firestore.collection(collectionKey);
+    const batch = firestore.batch();
+    objectsToAdd.forEach(obj => {
+        const newDocRef = collectionRef.doc();
+        batch.set(newDocRef,obj)
+    })
+    return await batch.commit();
+}
 
 export const auth = firebase.auth();
 export const firestore = firebase.firestore();
